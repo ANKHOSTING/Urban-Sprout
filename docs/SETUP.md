@@ -9,7 +9,11 @@ Everything marked **[you]** needs your own account or keys.
    supabase login
    supabase link --project-ref YOUR_PROJECT_REF
    supabase db push                     # applies supabase/migrations (tables, RLS, photos bucket)
-   supabase secrets set OPENAI_API_KEY=sk-... FREE_DAILY_LIMIT=5   # optional AI_MODEL=gpt-4o-mini
+   supabase secrets set AI_API_KEY=fw_... FREE_DAILY_LIMIT=5
+   # Optional: AI_BASE_URL (default https://api.fireworks.ai/inference/v1)
+   #           AI_MODEL    (default accounts/fireworks/models/nemotron-lightning-3p5-30b-a3b)
+   # Any OpenAI-compatible provider works. For OpenAI itself:
+   #   supabase secrets set AI_API_KEY=sk-... AI_BASE_URL=https://api.openai.com/v1 AI_MODEL=gpt-4o-mini
    supabase functions deploy plant-advice
    supabase secrets set REVENUECAT_WEBHOOK_AUTH=$(openssl rand -hex 24)
    supabase functions deploy revenuecat-webhook --no-verify-jwt

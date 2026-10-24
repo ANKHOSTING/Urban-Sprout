@@ -7,7 +7,7 @@ The original version was built on Base44; this version no longer depends on Base
 
 ## Features
 - **My Plants** – care info (built-in guide for common plants) and local watering reminders (expo-notifications)
-- **Ask AI** – plant-advice chat via a Supabase Edge Function (AI key stays on the server); free tier 5 questions/day
+- **Ask AI** – plant-advice chat via a Supabase Edge Function (AI key stays on the server; any OpenAI-compatible provider — Fireworks by default, OpenAI via `AI_BASE_URL`/`AI_MODEL`); free tier 5 questions/day
 - **Garden Journal** – notes with camera/gallery photos
 - **Community Market** – listings for cuttings, seeds and produce, with **report** and **block user**
 - **Account** – sign in, privacy policy, restore purchases, **delete account** (Google Play requirement)

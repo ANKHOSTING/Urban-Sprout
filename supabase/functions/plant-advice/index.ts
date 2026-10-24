@@ -1,7 +1,11 @@
 // Supabase Edge Function: AI plant advice with a free-tier daily limit.
-// Secrets (set with `supabase secrets set`): OPENAI_API_KEY, optional AI_MODEL, FREE_DAILY_LIMIT.
+// Secrets (set with `supabase secrets set`): AI_API_KEY, optional AI_BASE_URL, AI_MODEL, FREE_DAILY_LIMIT.
+// Works with any OpenAI-compatible chat completions API (Fireworks by default; OpenAI, OpenRouter, etc. by changing AI_BASE_URL + AI_MODEL).
 // SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 import { createClient } from "npm:@supabase/supabase-js@2";
+
+const DEFAULT_BASE_URL = "https://api.fireworks.ai/inference/v1";
+const DEFAULT_MODEL = "accounts/fireworks/models/nemotron-lightning-3p5-30b-a3b";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -36,12 +40,16 @@ Deno.serve(async (req) => {
       if (used >= limit) return json({ error: "limit_reached", limit, used }, 429);
     }
 
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    const apiKey = Deno.env.get("AI_API_KEY");
+    if (!apiKey) return json({ error: "AI is not configured" }, 500);
+    const baseUrl = (Deno.env.get("AI_BASE_URL") || DEFAULT_BASE_URL).replace(/\/+$/, "");
+    const resp = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: Deno.env.get("AI_MODEL") ?? "gpt-4o-mini",
-        max_tokens: 600,
+        model: Deno.env.get("AI_MODEL") || DEFAULT_MODEL,
+        // Generous budget: some models spend tokens on hidden reasoning before answering.
+        max_tokens: 1500,
         messages: [
           { role: "system", content: "You are Urban Sprout, a friendly expert on urban, balcony, and indoor gardening. Give concise, practical, safe plant-care advice. If unsure, say so." },
           ...messages.slice(-12).map((m) => ({ role: m.role, content: String(m.content).slice(0, 2000) })),
@@ -50,7 +58,7 @@ Deno.serve(async (req) => {
     });
     if (!resp.ok) return json({ error: "AI provider error" }, 502);
     const data = await resp.json();
-    const reply: string = data.choices?.[0]?.message?.content ?? "Sorry, I couldn't come up with an answer.";
+    const reply: string = data.choices?.[0]?.message?.content?.trim() || "Sorry, I couldn't come up with an answer.";
 
     if (!isPro) used = (await admin.rpc("increment_ai_usage", { p_user: user.id })).data ?? used + 1;
     return json({ reply, isPro, used, limit: isPro ? null : limit });
