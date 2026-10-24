@@ -62,6 +62,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#E8F5E9"
         }
+      ],
+      [
+        "./plugins/with-release-signing.js",
+        {
+          "propertiesPath": "~/.config/grokbot/urban_sprout_upload/keystore.properties"
+        }
       ]
     ],
     "experiments": {
