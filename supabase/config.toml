@@ -1,0 +1,4 @@
+project_id = "urban-sprout"
+
+[functions.revenuecat-webhook]
+verify_jwt = false

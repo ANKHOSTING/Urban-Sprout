@@ -1,0 +1,82 @@
+{
+  "expo": {
+    "name": "Urban Sprout",
+    "slug": "urban-sprout",
+    "scheme": "urbansprout",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.ankhosting.urbansprout",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.ankhosting.urbansprout",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/monochrome-icon.png",
+        "backgroundColor": "#2E7D32"
+      },
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "com.android.vending.BILLING"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "expo-build-properties",
+        {}
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2E7D32"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Urban Sprout uses your photos to add pictures to your garden journal and listings.",
+          "cameraPermission": "Urban Sprout uses the camera to photograph your plants."
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#E8F5E9"
+        }
+      ],
+      [
+        "./plugins/with-release-signing.js",
+        {
+          "propertiesPath": "~/.config/grokbot/urban_sprout_upload/keystore.properties"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    }
+  }
+}
