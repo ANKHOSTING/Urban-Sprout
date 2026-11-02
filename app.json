@@ -32,7 +32,12 @@
       "expo-status-bar",
       [
         "expo-build-properties",
-        {}
+        {
+          "android": {
+            "compileSdkVersion": 37,
+            "targetSdkVersion": 36
+          }
+        }
       ],
       [
         "expo-notifications",
