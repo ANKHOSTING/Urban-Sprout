@@ -12,8 +12,10 @@ export function purchasesAvailable() {
 
 export function initPurchases() {
   if (configured || !purchasesAvailable()) return;
-  Purchases.configure({ apiKey: ANDROID_KEY });
-  configured = true;
+  try {
+    Purchases.configure({ apiKey: ANDROID_KEY });
+    configured = true;
+  } catch { /* never block app launch on billing init */ }
 }
 
 export async function identifyPurchaser(userId: string | null) {

@@ -1,15 +1,27 @@
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import mobileAds from 'react-native-google-mobile-ads';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { ProProvider } from '@/lib/pro';
 import { initPurchases } from '@/lib/purchases';
 import { ADS_ENABLED } from '@/lib/ads';
+import { Text, Pressable } from 'react-native';
 import { colors } from '@/components/ui';
 
-initPurchases();
+try { initPurchases(); } catch { /* ignore */ }
+
+/** Shows the error instead of a silent crash/blank screen if a screen throws. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#fff' }}>
+      <Text style={{ fontSize: 20, fontWeight: '700', marginBottom: 8 }}>Something went wrong</Text>
+      <Text style={{ color: '#555', marginBottom: 16 }}>{String(error?.message ?? error)}</Text>
+      <Pressable onPress={retry}><Text style={{ color: colors.green, fontWeight: '700' }}>Try again</Text></Pressable>
+    </View>
+  );
+}
 
 function Gate() {
   const { session, loading } = useAuth();

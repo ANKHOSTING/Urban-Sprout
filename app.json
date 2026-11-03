@@ -32,7 +32,12 @@
       "expo-status-bar",
       [
         "expo-build-properties",
-        {}
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false
+          }
+        }
       ],
       [
         "expo-notifications",
