@@ -24,8 +24,19 @@ Deno.serve(async (req) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "Not signed in" }, 401);
 
-    const { messages } = await req.json() as { messages: { role: "user" | "assistant"; content: string }[] };
-    if (!Array.isArray(messages) || messages.length === 0) return json({ error: "No messages" }, 400);
+    let body: { messages?: unknown };
+    try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const raw = body?.messages;
+    if (!Array.isArray(raw) || raw.length === 0) return json({ error: "No messages" }, 400);
+    // Only user/assistant turns are accepted from clients; anything else (system, tool, ...) is rejected
+    // so callers cannot override the server-side system prompt.
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    for (const m of raw as { role?: unknown; content?: unknown }[]) {
+      if ((m?.role !== "user" && m?.role !== "assistant") || typeof m.content !== "string") {
+        return json({ error: "Invalid message role or content" }, 400);
+      }
+      messages.push({ role: m.role, content: m.content });
+    }
 
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: sub } = await admin.from("subscriptions").select("is_pro, expires_at").eq("user_id", user.id).maybeSingle();

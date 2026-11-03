@@ -31,8 +31,8 @@ Everything marked **[you]** needs your own account or keys.
 
 ## 3. AdMob banners [you]
 1. Create an app at https://admob.google.com and a **Banner** ad unit.
-2. In `app.json` → plugins → `react-native-google-mobile-ads`, replace `androidAppId` (currently Google's **test** app ID) with your App ID `ca-app-pub-XXXX~YYYY`.
-3. Set `EXPO_PUBLIC_ADMOB_BANNER_ANDROID=ca-app-pub-XXXX/ZZZZ` in `.env`. While it's empty (or in dev), Google's test banner is used.
+2. Set `ADMOB_ANDROID_APP_ID=ca-app-pub-XXXX~YYYY` (env / EAS environment variable); `app.config.js` injects it into the AdMob plugin. The EAS **production** profile fails if it is missing.
+3. Set `EXPO_PUBLIC_ADMOB_BANNER_ANDROID=ca-app-pub-XXXX/ZZZZ` in `.env` / EAS env. If empty, release builds show **no** ad; Google's test banner is used only in `__DEV__`.
 4. Set `EXPO_PUBLIC_ADS_ENABLED=false` to ship without ads. Pro users never see ads.
 
 ## 4. Build with EAS [you: Expo account]
