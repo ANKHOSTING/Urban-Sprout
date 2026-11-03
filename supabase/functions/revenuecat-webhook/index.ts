@@ -3,6 +3,7 @@
 // Set secret REVENUECAT_WEBHOOK_AUTH and use the same value as the webhook's Authorization header in RevenueCat.
 // The app calls Purchases.logIn(supabaseUserId), so app_user_id == Supabase user id.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { chooseExpiry, eventTime, isStale, parseLifetimeProductIds } from "./logic.ts";
 
 // Constant-time string comparison (avoids leaking the secret via timing).
 function safeEqual(a: string, b: string): boolean {
@@ -37,27 +38,42 @@ Deno.serve(async (req) => {
   const active = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE", "NON_RENEWING_PURCHASE"].includes(event.type);
   const expired = ["EXPIRATION"].includes(event.type);
   if (!active && !expired) return new Response("ok");
-  // Never grant unbounded Pro: active events need an expiry. Subscriptions always carry one; NON_RENEWING_PURCHASE may
-  // not, so it gets a bounded grant (NON_RENEWING_DAYS, default 31). Any other active event without expiry is rejected.
+  // Never grant unbounded Pro: active events always get an expiry (see logic.ts).
+  // LIFETIME_PRODUCT_IDS (comma-separated) lists non-renewing products that grant Pro until 2099-12-31;
+  // every other non-renewing product gets NON_RENEWING_DAYS (default 31).
   let expiresAt: string | null = null;
   if (active) {
-    const ms = Number(event.expiration_at_ms);
-    if (Number.isFinite(ms) && ms > 0) {
-      expiresAt = new Date(ms).toISOString();
-    } else if (event.type === "NON_RENEWING_PURCHASE") {
-      const days = Number(Deno.env.get("NON_RENEWING_DAYS") ?? "31");
-      expiresAt = new Date(Date.now() + (Number.isFinite(days) && days > 0 ? days : 31) * 86_400_000).toISOString();
-    } else {
-      console.error("active event without expiration", event.type);
+    const r = chooseExpiry(event, {
+      lifetimeIds: parseLifetimeProductIds(Deno.env.get("LIFETIME_PRODUCT_IDS")),
+      nonRenewingDays: Number(Deno.env.get("NON_RENEWING_DAYS") ?? "31"),
+      nowMs: Date.now(),
+    });
+    if (!r.ok) {
+      console.error(r.reason, event.type);
       return new Response("missing expiration", { status: 400 });
     }
+    expiresAt = r.expiresAt;
   }
+
+  // Out-of-order guard: RevenueCat may deliver events late or out of order. Ignore (but ACK with 200) any event
+  // older than what the row already reflects, and store the event's own time as updated_at.
+  const when = eventTime(event, Date.now());
+  if (!when.fromEvent) console.warn("event_timestamp_ms missing/invalid; using receive time", event.type);
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: existing, error: readErr } = await admin.from("subscriptions").select("updated_at").eq("user_id", userId).maybeSingle();
+  if (readErr) {
+    console.error("subscriptions read failed", readErr.message);
+    return new Response("error", { status: 500 }); // non-2xx so RevenueCat retries
+  }
+  if (isStale(when.ms, existing?.updated_at)) {
+    console.warn("ignoring stale event", event.type, event.event_timestamp_ms);
+    return new Response("ignored stale event");
+  }
   const { error } = await admin.from("subscriptions").upsert({
     user_id: userId,
     is_pro: active,
     expires_at: expiresAt,
-    updated_at: new Date().toISOString(),
+    updated_at: new Date(when.ms).toISOString(),
   });
   if (error) {
     console.error("subscriptions upsert failed", error.message);
