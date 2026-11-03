@@ -16,6 +16,8 @@ const json = (body: unknown, status = 200) =>
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  // Set once a free-tier unit is reserved; also called from the outer catch so any later throw/timeout is refunded.
+  let refund: () => Promise<void> = async () => {};
   try {
     const url = Deno.env.get("SUPABASE_URL")!;
     const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -40,16 +42,21 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: sub } = await admin.from("subscriptions").select("is_pro, expires_at").eq("user_id", user.id).maybeSingle();
-    const isPro = !!sub?.is_pro && (!sub.expires_at || new Date(sub.expires_at) > new Date());
+    const isPro = !!sub?.is_pro && !!sub.expires_at && new Date(sub.expires_at) > new Date(); // null expiry never grants Pro
     const limit = Number(Deno.env.get("FREE_DAILY_LIMIT") ?? "5");
 
     let used = 0;
     // Atomic reserve BEFORE the AI call (no read-then-write race); refunded if the AI call fails.
-    const refund = async () => { if (!isPro) await admin.rpc("refund_ai_usage", { p_user: user.id }).then(() => {}, () => {}); };
     if (!isPro) {
       const { data: n, error: incErr } = await admin.rpc("increment_ai_usage", { p_user: user.id });
       if (incErr || typeof n !== "number") { console.error("usage increment failed", incErr?.message); return json({ error: "Something went wrong. Please try again." }, 500); }
       used = n;
+      let refunded = false;
+      refund = async () => {
+        if (refunded) return;
+        refunded = true;
+        await admin.rpc("refund_ai_usage", { p_user: user.id }).then(() => {}, () => {});
+      };
       if (used > limit) { await refund(); return json({ error: "limit_reached", limit, used: limit }, 429); }
     }
 
@@ -58,6 +65,7 @@ Deno.serve(async (req) => {
     const baseUrl = (Deno.env.get("AI_BASE_URL") || DEFAULT_BASE_URL).replace(/\/+$/, "");
     const resp = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
+      signal: AbortSignal.timeout(Number(Deno.env.get("AI_TIMEOUT_MS") ?? "25000")),
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: Deno.env.get("AI_MODEL") || DEFAULT_MODEL,
@@ -73,9 +81,12 @@ Deno.serve(async (req) => {
     const data = await resp.json();
     const reply: string = data.choices?.[0]?.message?.content?.trim() || "Sorry, I couldn't come up with an answer.";
 
+    refund = async () => {}; // success: keep the reserved unit
     return json({ reply, isPro, used, limit: isPro ? null : limit });
   } catch (e) {
     console.error("plant-advice failed", e);
+    await refund();
+    if ((e as Error)?.name === "TimeoutError") return json({ error: "The AI took too long. Please try again." }, 504);
     return json({ error: "Something went wrong. Please try again." }, 500);
   }
 });

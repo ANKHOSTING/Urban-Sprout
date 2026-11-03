@@ -47,9 +47,11 @@ gradle.taskGraph.whenReady { graph ->
     }
 }
 `;
-    g = g.replace(/\nandroid\s*\{/, `${loader}\nandroid {`);
+    const withLoader = g.replace(/\nandroid\s*\{/, `${loader}\nandroid {`);
+    if (withLoader === g) throw new Error('with-release-signing: could not find the `android {` block in app/build.gradle; refusing to continue without release signing.');
+    g = withLoader;
     // add a release signingConfig next to debug
-    g = g.replace(/signingConfigs\s*\{/, `signingConfigs {
+    const withSigning = g.replace(/signingConfigs\s*\{/, `signingConfigs {
         release {
             if (releaseSigningReady) {
                 storeFile releaseSigningStoreFile
@@ -58,9 +60,14 @@ gradle.taskGraph.whenReady { graph ->
                 keyPassword releaseSigningGet('keypassword')
             }
         }`);
+    if (withSigning === g) throw new Error('with-release-signing: could not find `signingConfigs {` in app/build.gradle; refusing to continue without release signing.');
+    g = withSigning;
     // point the release buildType at it
-    g = g.replace(/(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?)signingConfig\s+signingConfigs\.debug/,
+    const withBuildType = g.replace(/(buildTypes\s*\{[\s\S]*?release\s*\{[\s\S]*?)signingConfig\s+signingConfigs\.debug/,
       '$1signingConfig signingConfigs.release');
+    // If the template changed and the release buildType still points at debug signing, fail loudly instead of shipping a debug-signed release.
+    if (withBuildType === g) throw new Error('with-release-signing: could not replace the release buildType debug signingConfig in app/build.gradle; refusing to continue (would risk debug-signed releases).');
+    g = withBuildType;
     cfg.modResults.contents = g;
     return cfg;
   });

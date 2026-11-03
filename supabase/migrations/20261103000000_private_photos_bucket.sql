@@ -11,6 +11,16 @@ drop policy if exists "read marketplace listing photos" on storage.objects;
 create policy "read own photos" on storage.objects for select to authenticated
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+-- Listing photos must live in the listing owner's folder, otherwise a user could point a listing at another user's
+-- (e.g. journal) photo and make it readable via the policy below. Existing violating rows are NULLed out first
+-- (they are either broken or cross-user references) so the constraint can be added already validated.
+update public.listings set photo_path = null
+  where photo_path is not null and left(photo_path, length(user_id::text) + 1) <> user_id::text || '/';
+alter table public.listings drop constraint if exists listings_photo_path_owner_chk;
+alter table public.listings add constraint listings_photo_path_owner_chk
+  check (photo_path is null or left(photo_path, length(user_id::text) + 1) = user_id::text || '/');
+create index if not exists listings_photo_path_idx on public.listings (photo_path);
+
 -- Marketplace: signed-in users may read a photo only if a listing they can see (listings RLS already
 -- hides moderated/hidden listings and blocked users) references it. Journal photos are never exposed.
 create policy "read marketplace listing photos" on storage.objects for select to authenticated

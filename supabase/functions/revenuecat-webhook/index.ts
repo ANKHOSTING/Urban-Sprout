@@ -37,11 +37,26 @@ Deno.serve(async (req) => {
   const active = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE", "NON_RENEWING_PURCHASE"].includes(event.type);
   const expired = ["EXPIRATION"].includes(event.type);
   if (!active && !expired) return new Response("ok");
+  // Never grant unbounded Pro: active events need an expiry. Subscriptions always carry one; NON_RENEWING_PURCHASE may
+  // not, so it gets a bounded grant (NON_RENEWING_DAYS, default 31). Any other active event without expiry is rejected.
+  let expiresAt: string | null = null;
+  if (active) {
+    const ms = Number(event.expiration_at_ms);
+    if (Number.isFinite(ms) && ms > 0) {
+      expiresAt = new Date(ms).toISOString();
+    } else if (event.type === "NON_RENEWING_PURCHASE") {
+      const days = Number(Deno.env.get("NON_RENEWING_DAYS") ?? "31");
+      expiresAt = new Date(Date.now() + (Number.isFinite(days) && days > 0 ? days : 31) * 86_400_000).toISOString();
+    } else {
+      console.error("active event without expiration", event.type);
+      return new Response("missing expiration", { status: 400 });
+    }
+  }
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { error } = await admin.from("subscriptions").upsert({
     user_id: userId,
     is_pro: active,
-    expires_at: event.expiration_at_ms ? new Date(event.expiration_at_ms).toISOString() : null,
+    expires_at: expiresAt,
     updated_at: new Date().toISOString(),
   });
   if (error) {

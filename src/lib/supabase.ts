@@ -24,6 +24,14 @@ export type Listing = {
 const SIGNED_URL_TTL_S = 60 * 60; // 1 hour
 const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
 
+// Drop cached signed URLs whenever the signed-in user changes (sign-out, account switch) so they never leak across sessions.
+let cacheUserId: string | null = null;
+supabase.auth.onAuthStateChange((event, session) => {
+  const uid = session?.user?.id ?? null;
+  if (event === 'SIGNED_OUT' || uid !== cacheUserId) signedUrlCache.clear();
+  cacheUserId = uid;
+});
+
 /** Short-lived signed URL for a private `photos` object. Null-safe: returns null on missing path or any error. */
 export async function signedPhotoUrl(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
