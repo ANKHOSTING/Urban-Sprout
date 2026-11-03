@@ -28,6 +28,7 @@ Everything marked **[you]** needs your own account or keys.
 3. Create entitlement **`pro`**, attach the products, and put them in the **current** Offering.
 4. Put the public Android SDK key (`goog_...`) in `.env` as `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY`.
 5. Integrations → Webhooks: URL `https://YOUR_PROJECT_REF.functions.supabase.co/revenuecat-webhook`, Authorization header `Bearer <REVENUECAT_WEBHOOK_AUTH>`. Optional secrets: `LIFETIME_PRODUCT_IDS` (comma-separated non-renewing product ids that grant Pro until 2099-12-31; any other non-renewing product gets `NON_RENEWING_DAYS`, default 31). Events older than the stored row are ignored. This lets the server know who is Pro so the AI limit is enforced securely.
+   Apply the migrations (`supabase db push`, includes `apply_subscription_event`) **before** deploying the `revenuecat-webhook` function, otherwise the webhook returns 500.
 
 ## 3. AdMob banners [you]
 1. Create an app at https://admob.google.com and a **Banner** ad unit.

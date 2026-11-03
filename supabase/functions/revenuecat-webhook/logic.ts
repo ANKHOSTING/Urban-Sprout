@@ -24,8 +24,13 @@ export function chooseExpiry(
   if (event.type === "NON_RENEWING_PURCHASE" && typeof event.product_id === "string" && opts.lifetimeIds.has(event.product_id.trim())) {
     return { ok: true, expiresAt: LIFETIME_EXPIRY };
   }
-  const ms = Number(event.expiration_at_ms);
-  if (Number.isFinite(ms) && ms > 0) return { ok: true, expiresAt: new Date(ms).toISOString() };
+  const ms = event.expiration_at_ms;
+  if (ms !== undefined && ms !== null) { // present: must be a sane epoch-ms value (8.64e15 = max valid JS Date)
+    if (typeof ms !== "number" || !Number.isSafeInteger(ms) || ms < 1e11 || ms > 8.64e15) {
+      return { ok: false, reason: "expiration_at_ms invalid" };
+    }
+    return { ok: true, expiresAt: new Date(ms).toISOString() };
+  }
   if (event.type === "NON_RENEWING_PURCHASE") {
     const days = Number.isFinite(opts.nonRenewingDays) && opts.nonRenewingDays > 0 ? opts.nonRenewingDays : 31;
     return { ok: true, expiresAt: new Date(opts.nowMs + days * DAY_MS).toISOString() };

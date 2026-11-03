@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     });
     if (!r.ok) {
       console.error(r.reason, event.type);
-      return new Response("missing expiration", { status: 400 });
+      return new Response(r.reason, { status: 400 });
     }
     expiresAt = r.expiresAt;
   }

@@ -26,6 +26,18 @@ Deno.test("revenuecat-webhook logic", () => {
   // bad NON_RENEWING_DAYS falls back to 31
   assert.deepEqual(chooseExpiry({ type: "NON_RENEWING_PURCHASE" }, { ...opts(""), nonRenewingDays: NaN }), { ok: true, expiresAt: plus31 });
 
+  // expiration_at_ms, when present, must be a safe integer in [1e11, 8.64e15]
+  const exp = (v: unknown) => chooseExpiry({ type: "RENEWAL", expiration_at_ms: v }, opts(""));
+  assert.deepEqual(exp(1e11), { ok: true, expiresAt: new Date(1e11).toISOString() });
+  assert.deepEqual(exp(8.64e15), { ok: true, expiresAt: new Date(8.64e15).toISOString() });
+  for (const bad of [1e11 - 1, 8.64e15 + 1, 0, -1, 1.5, NaN, Infinity, 2 ** 60, "1700000000000", [1700000000000], true, {}]) {
+    assert.deepEqual(exp(bad), { ok: false, reason: "expiration_at_ms invalid" }, String(bad));
+  }
+  // present-but-invalid is rejected even for NON_RENEWING_PURCHASE (no silent 31-day grant); absent/null still gets 31 days
+  assert.deepEqual(chooseExpiry({ type: "NON_RENEWING_PURCHASE", expiration_at_ms: "x" }, opts("")), { ok: false, reason: "expiration_at_ms invalid" });
+  assert.deepEqual(chooseExpiry({ type: "NON_RENEWING_PURCHASE", expiration_at_ms: null }, opts("")), { ok: true, expiresAt: plus31 });
+  assert.equal(chooseExpiry({ type: "RENEWAL", expiration_at_ms: null }, opts("")).ok, false);
+
   // parseEventTimestamp: required safe integer in [1e11, now + 5 min]
   const ok = (ms: unknown) => parseEventTimestamp({ event_timestamp_ms: ms }, NOW);
   assert.deepEqual(ok(1700000000000), { ok: true, ms: 1700000000000 });
