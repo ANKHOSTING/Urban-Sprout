@@ -67,7 +67,8 @@
           "backgroundColor": "#E8F5E9"
         }
       ],
-      "./plugins/with-release-signing.js"
+      "./plugins/with-release-signing.js",
+      "./plugins/with-no-test-admob.js"
     ],
     "experiments": {
       "typedRoutes": true
