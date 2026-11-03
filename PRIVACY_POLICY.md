@@ -3,7 +3,7 @@
 _Last updated: October 23, 2026_
 
 Urban Sprout ("we", "the app") is published by ANKHOSTING. This policy explains what we collect and why.
-Contact: **REPLACE_WITH_SUPPORT_EMAIL**
+Contact: **Ankhosting2025@gmail.com**
 
 ## Information we collect
 - **Account info:** email address and a display name, used to sign you in.
