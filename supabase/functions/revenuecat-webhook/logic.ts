@@ -18,10 +18,10 @@ export type ExpiryResult = { ok: true; expiresAt: string } | { ok: false; reason
  * - Any other active event without expiry -> rejected.
  */
 export function chooseExpiry(
-  event: { type?: string; product_id?: string; expiration_at_ms?: unknown },
+  event: { type?: string; product_id?: unknown; expiration_at_ms?: unknown },
   opts: { lifetimeIds: Set<string>; nonRenewingDays: number; nowMs: number },
 ): ExpiryResult {
-  if (event.type === "NON_RENEWING_PURCHASE" && event.product_id && opts.lifetimeIds.has(event.product_id.trim())) {
+  if (event.type === "NON_RENEWING_PURCHASE" && typeof event.product_id === "string" && opts.lifetimeIds.has(event.product_id.trim())) {
     return { ok: true, expiresAt: LIFETIME_EXPIRY };
   }
   const ms = Number(event.expiration_at_ms);
@@ -33,20 +33,20 @@ export function chooseExpiry(
   return { ok: false, reason: "active event without expiration" };
 }
 
-export type EventTime = { ms: number; fromEvent: boolean };
+export type EventTimeResult = { ok: true; ms: number } | { ok: false; reason: string };
+
+const MIN_EVENT_MS = 1e11; // ~1973; anything smaller is almost certainly seconds, not milliseconds
+const MAX_FUTURE_SKEW_MS = 5 * 60_000;
 
 /**
- * Time to store as updated_at. Uses event_timestamp_ms; if it is missing/invalid, falls back to the receive time
- * (fromEvent=false) so the event is still processed but the caller can log the anomaly.
+ * Validates event_timestamp_ms: a safe integer within [1e11, now + 5 min]. Missing, non-numeric, too small
+ * (e.g. seconds) or future-dated values are rejected so they can never poison the stored updated_at.
  */
-export function eventTime(event: { event_timestamp_ms?: unknown }, nowMs: number): EventTime {
-  const ms = Number(event.event_timestamp_ms);
-  return Number.isFinite(ms) && ms > 0 ? { ms, fromEvent: true } : { ms: nowMs, fromEvent: false };
-}
-
-/** True when the event is strictly older than the stored row (out-of-order delivery). Equal timestamps are processed. */
-export function isStale(eventMs: number, existingUpdatedAt: string | null | undefined): boolean {
-  if (!existingUpdatedAt) return false;
-  const existing = Date.parse(existingUpdatedAt);
-  return Number.isFinite(existing) && eventMs < existing;
+export function parseEventTimestamp(event: { event_timestamp_ms?: unknown }, nowMs: number): EventTimeResult {
+  const ms = event.event_timestamp_ms;
+  if (ms === undefined || ms === null) return { ok: false, reason: "event_timestamp_ms missing" };
+  if (typeof ms !== "number" || !Number.isSafeInteger(ms)) return { ok: false, reason: "event_timestamp_ms is not a safe integer" };
+  if (ms < MIN_EVENT_MS) return { ok: false, reason: "event_timestamp_ms too small (not milliseconds?)" };
+  if (ms > nowMs + MAX_FUTURE_SKEW_MS) return { ok: false, reason: "event_timestamp_ms is in the future" };
+  return { ok: true, ms };
 }

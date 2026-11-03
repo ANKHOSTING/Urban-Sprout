@@ -3,7 +3,7 @@
 // Set secret REVENUECAT_WEBHOOK_AUTH and use the same value as the webhook's Authorization header in RevenueCat.
 // The app calls Purchases.logIn(supabaseUserId), so app_user_id == Supabase user id.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { chooseExpiry, eventTime, isStale, parseLifetimeProductIds } from "./logic.ts";
+import { chooseExpiry, parseEventTimestamp, parseLifetimeProductIds } from "./logic.ts";
 
 // Constant-time string comparison (avoids leaking the secret via timing).
 function safeEqual(a: string, b: string): boolean {
@@ -55,29 +55,27 @@ Deno.serve(async (req) => {
     expiresAt = r.expiresAt;
   }
 
-  // Out-of-order guard: RevenueCat may deliver events late or out of order. Ignore (but ACK with 200) any event
-  // older than what the row already reflects, and store the event's own time as updated_at.
-  const when = eventTime(event, Date.now());
-  if (!when.fromEvent) console.warn("event_timestamp_ms missing/invalid; using receive time", event.type);
+  // Out-of-order guard: RevenueCat may deliver events late or out of order. The timestamp is mandatory and validated;
+  // the SQL function applies the event atomically only if it is not older than the stored row (no read-then-write race).
+  const when = parseEventTimestamp(event, Date.now());
+  if (!when.ok) {
+    console.error("rejecting event:", when.reason, event.type);
+    return new Response(when.reason, { status: 400 });
+  }
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: existing, error: readErr } = await admin.from("subscriptions").select("updated_at").eq("user_id", userId).maybeSingle();
-  if (readErr) {
-    console.error("subscriptions read failed", readErr.message);
-    return new Response("error", { status: 500 }); // non-2xx so RevenueCat retries
-  }
-  if (isStale(when.ms, existing?.updated_at)) {
-    console.warn("ignoring stale event", event.type, event.event_timestamp_ms);
-    return new Response("ignored stale event");
-  }
-  const { error } = await admin.from("subscriptions").upsert({
-    user_id: userId,
-    is_pro: active,
-    expires_at: expiresAt,
-    updated_at: new Date(when.ms).toISOString(),
+  const { data: applied, error } = await admin.rpc("apply_subscription_event", {
+    p_user_id: userId,
+    p_is_pro: active,
+    p_expires_at: expiresAt,
+    p_updated_at: new Date(when.ms).toISOString(),
   });
   if (error) {
-    console.error("subscriptions upsert failed", error.message);
+    console.error("apply_subscription_event failed", error.message);
     return new Response("error", { status: 500 }); // non-2xx so RevenueCat retries
+  }
+  if (applied == null) {
+    console.warn("ignoring stale event", event.type, event.event_timestamp_ms);
+    return new Response("ignored stale event"); // 200: nothing to retry
   }
   return new Response("ok");
 });
