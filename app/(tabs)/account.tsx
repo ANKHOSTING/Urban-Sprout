@@ -7,7 +7,7 @@ import { usePro } from '@/lib/pro';
 import { restorePurchases } from '@/lib/purchases';
 import { Button, Card, s } from '@/components/ui';
 
-export const PRIVACY_URL = 'https://github.com/ANKHOSTING/Urban-Sprout/blob/main/PRIVACY_POLICY.md';
+export const PRIVACY_URL = 'https://ankhosting.github.io/urban-sprout/privacy.html';
 
 export default function Account() {
   const { session } = useAuth();
