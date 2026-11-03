@@ -28,6 +28,10 @@ Deno.serve(async (req) => {
   } catch {
     return new Response("bad request", { status: 400 });
   }
+  // Ignore RevenueCat SANDBOX (test purchase) events unless explicitly allowed, so test accounts can't grant Pro in prod.
+  if (event?.environment === "SANDBOX" && Deno.env.get("ALLOW_SANDBOX_EVENTS") !== "true") {
+    return new Response("ignored sandbox");
+  }
   const userId: string | undefined = event?.app_user_id;
   if (!userId || userId.startsWith("$RCAnonymousID")) return new Response("ignored");
   const active = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "PRODUCT_CHANGE", "NON_RENEWING_PURCHASE"].includes(event.type);

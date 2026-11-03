@@ -1,7 +1,7 @@
 // Expo config plugin: wires release signing into android/app/build.gradle so
 // `expo prebuild --clean` never loses it. No secrets are written to the repo:
 // the generated Gradle code loads a keystore.properties file at build time from
-//   $RELEASE_KEYSTORE_PROPERTIES  (env, preferred)  or  the plugin's `propertiesPath` option
+//   $RELEASE_KEYSTORE_PROPERTIES  (env; no machine-specific path is committed)  or the optional plugin `propertiesPath` option
 // (a leading ~ is expanded). Keys are matched by suffix, case/underscore-insensitive:
 //   ...storeFile, ...storePassword, ...keyAlias, ...keyPassword
 // e.g. storeFile=... or URBAN_UPLOAD_STORE_FILE=... both work.

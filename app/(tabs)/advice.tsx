@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { askPlantAdvice, type ChatMessage } from '@/lib/ai';
 import { usePro } from '@/lib/pro';
@@ -33,7 +33,7 @@ export default function Advice() {
     }
   };
   return (
-    <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+    <KeyboardAvoidingView style={s.screen} behavior="padding" keyboardVerticalOffset={90}>
       <FlatList
         ref={listRef}
         contentContainerStyle={s.pad}

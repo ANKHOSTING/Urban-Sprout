@@ -44,15 +44,17 @@ Deno.serve(async (req) => {
     const limit = Number(Deno.env.get("FREE_DAILY_LIMIT") ?? "5");
 
     let used = 0;
+    // Atomic reserve BEFORE the AI call (no read-then-write race); refunded if the AI call fails.
+    const refund = async () => { if (!isPro) await admin.rpc("refund_ai_usage", { p_user: user.id }).then(() => {}, () => {}); };
     if (!isPro) {
-      const today = new Date().toISOString().slice(0, 10);
-      const { data: u } = await admin.from("ai_usage").select("count").eq("user_id", user.id).eq("day", today).maybeSingle();
-      used = u?.count ?? 0;
-      if (used >= limit) return json({ error: "limit_reached", limit, used }, 429);
+      const { data: n, error: incErr } = await admin.rpc("increment_ai_usage", { p_user: user.id });
+      if (incErr || typeof n !== "number") { console.error("usage increment failed", incErr?.message); return json({ error: "Something went wrong. Please try again." }, 500); }
+      used = n;
+      if (used > limit) { await refund(); return json({ error: "limit_reached", limit, used: limit }, 429); }
     }
 
     const apiKey = Deno.env.get("AI_API_KEY");
-    if (!apiKey) return json({ error: "AI is not configured" }, 500);
+    if (!apiKey) { await refund(); return json({ error: "AI is not configured" }, 500); }
     const baseUrl = (Deno.env.get("AI_BASE_URL") || DEFAULT_BASE_URL).replace(/\/+$/, "");
     const resp = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
@@ -67,13 +69,13 @@ Deno.serve(async (req) => {
         ],
       }),
     });
-    if (!resp.ok) return json({ error: "AI provider error" }, 502);
+    if (!resp.ok) { console.error("AI provider", resp.status); await refund(); return json({ error: "AI provider error" }, 502); }
     const data = await resp.json();
     const reply: string = data.choices?.[0]?.message?.content?.trim() || "Sorry, I couldn't come up with an answer.";
 
-    if (!isPro) used = (await admin.rpc("increment_ai_usage", { p_user: user.id })).data ?? used + 1;
     return json({ reply, isPro, used, limit: isPro ? null : limit });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    console.error("plant-advice failed", e);
+    return json({ error: "Something went wrong. Please try again." }, 500);
   }
 });

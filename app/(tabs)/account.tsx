@@ -19,6 +19,21 @@ export default function Account() {
     [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete forever', style: 'destructive', onPress: async () => {
+        // Remove stored photos through the Storage API first (SQL deletes leave the underlying files behind).
+        const uid = session?.user.id;
+        if (uid) {
+          try {
+            for (let i = 0; i < 20; i++) { // up to 20 pages of 100 files
+              const { data: files, error: listErr } = await supabase.storage.from('photos').list(uid, { limit: 100 });
+              if (listErr) throw listErr;
+              if (!files || files.length === 0) break;
+              const { error: rmErr } = await supabase.storage.from('photos').remove(files.map((f) => `${uid}/${f.name}`));
+              if (rmErr) throw rmErr;
+            }
+          } catch (e: any) {
+            return Alert.alert('Could not delete photos', e?.message ?? 'Please try again.');
+          }
+        }
         const { error } = await supabase.rpc('delete_my_account');
         if (error) return Alert.alert('Could not delete', error.message);
         await supabase.auth.signOut();
