@@ -2,6 +2,7 @@
   "expo": {
     "name": "Urban Sprout",
     "slug": "urban-sprout",
+    "owner": "ankhosting",
     "scheme": "urbansprout",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -75,7 +76,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "edf167d0-2bd2-4d77-aee4-4452d42176f0"
       }
     }
   }

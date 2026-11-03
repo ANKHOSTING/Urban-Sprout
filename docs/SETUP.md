@@ -40,7 +40,7 @@ Everything marked **[you]** needs your own account or keys.
 ```bash
 npm i -g eas-cli
 eas login
-eas init                      # writes your projectId into app.json (replaces REPLACE_WITH_EAS_PROJECT_ID)
+eas init                      # DONE: projectId edf167d0-2bd2-4d77-aee4-4452d42176f0 (owner ankhosting) is already set in app.json; re-run only if you recreate the project
 eas env:create ...            # or add the EXPO_PUBLIC_* values as EAS environment variables
 eas build -p android --profile production   # produces a signed .aab (EAS manages the upload key)
 ```
