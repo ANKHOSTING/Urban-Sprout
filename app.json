@@ -22,6 +22,10 @@
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
         "com.android.vending.BILLING"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {
@@ -44,14 +48,14 @@
         "expo-image-picker",
         {
           "photosPermission": "Urban Sprout uses your photos to add pictures to your garden journal and listings.",
-          "cameraPermission": "Urban Sprout uses the camera to photograph your plants."
+          "cameraPermission": "Urban Sprout uses the camera to photograph your plants.",
+          "microphonePermission": false
         }
       ],
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+          "androidAppId": "REPLACE_WITH_ADMOB_ANDROID_APP_ID"
         }
       ],
       [
@@ -63,12 +67,8 @@
           "backgroundColor": "#E8F5E9"
         }
       ],
-      [
-        "./plugins/with-release-signing.js",
-        {
-          "propertiesPath": "~/.config/grokbot/urban_sprout_upload/keystore.properties"
-        }
-      ]
+      "./plugins/with-release-signing.js",
+      "./plugins/with-no-test-admob.js"
     ],
     "experiments": {
       "typedRoutes": true

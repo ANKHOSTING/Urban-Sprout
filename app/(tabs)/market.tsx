@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, Image, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { Link, useFocusEffect, useRouter } from 'expo-router';
-import { formatPrice, photoUrl, supabase, type Listing } from '@/lib/supabase';
+import { formatPrice, supabase, type Listing } from '@/lib/supabase';
+import { PhotoImage } from '@/components/PhotoImage';
 import { AdBanner } from '@/components/AdBanner';
 import { Card, Empty, s } from '@/components/ui';
 
@@ -26,11 +27,10 @@ export default function Market() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={<Empty text="No listings yet. Share cuttings, seeds, or produce with neighbors." />}
         renderItem={({ item }) => {
-          const url = photoUrl(item.photo_path);
           return (
             <Pressable onPress={() => router.push({ pathname: '/market/[id]', params: { id: item.id } })}>
               <Card style={[s.row, { alignItems: 'flex-start' }]}>
-                {url && <Image source={{ uri: url }} style={{ width: 72, height: 72, borderRadius: 8 }} />}
+                <PhotoImage path={item.photo_path} style={{ width: 72, height: 72, borderRadius: 8 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.h2}>{item.title}</Text>
                   <Text style={{ color: '#2E7D32', fontWeight: '600' }}>{formatPrice(item)}</Text>

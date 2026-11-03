@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Text, View } from 'react-native';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { Button, Input, s, colors } from '@/components/ui';
 
@@ -17,7 +17,7 @@ export default function SignIn() {
     else if (mode === 'up') Alert.alert('Check your email', 'Confirm your address if email confirmation is enabled, then sign in.');
   };
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[s.screen, { justifyContent: 'center' }]}>
+    <KeyboardAvoidingView behavior="padding" style={[s.screen, { justifyContent: 'center' }]}>
       <View style={s.pad}>
         <Text style={{ fontSize: 48, textAlign: 'center' }}>🌱</Text>
         <Text style={[s.h1, { textAlign: 'center' }]}>Urban Sprout</Text>

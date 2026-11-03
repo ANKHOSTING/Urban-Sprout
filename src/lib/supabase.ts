@@ -21,9 +21,30 @@ export type Listing = {
   is_trade: boolean; photo_path: string | null; location: string | null; created_at: string;
 };
 
-export function photoUrl(path: string | null): string | null {
+const SIGNED_URL_TTL_S = 60 * 60; // 1 hour
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+// Drop cached signed URLs whenever the signed-in user changes (sign-out, account switch) so they never leak across sessions.
+let cacheUserId: string | null = null;
+supabase.auth.onAuthStateChange((event, session) => {
+  const uid = session?.user?.id ?? null;
+  if (event === 'SIGNED_OUT' || uid !== cacheUserId) signedUrlCache.clear();
+  cacheUserId = uid;
+});
+
+/** Short-lived signed URL for a private `photos` object. Null-safe: returns null on missing path or any error. */
+export async function signedPhotoUrl(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
-  return supabase.storage.from('photos').getPublicUrl(path).data.publicUrl;
+  const hit = signedUrlCache.get(path);
+  if (hit && hit.expiresAt > Date.now() + 60_000) return hit.url;
+  try {
+    const { data, error } = await supabase.storage.from('photos').createSignedUrl(path, SIGNED_URL_TTL_S);
+    if (error || !data?.signedUrl) return null;
+    signedUrlCache.set(path, { url: data.signedUrl, expiresAt: Date.now() + SIGNED_URL_TTL_S * 1000 });
+    return data.signedUrl;
+  } catch {
+    return null;
+  }
 }
 
 /** Upload a local image URI to the photos bucket under the user's folder. Returns storage path. */

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, ScrollView, Text } from 'react-native';
+import { Alert, ScrollView, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { formatPrice, photoUrl, supabase, type Listing } from '@/lib/supabase';
+import { formatPrice, supabase, type Listing } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
+import { PhotoImage } from '@/components/PhotoImage';
 import { Button, Card, Input, s } from '@/components/ui';
 
 export default function ListingDetail() {
@@ -24,7 +25,6 @@ export default function ListingDetail() {
   }, [id]);
   if (!item) return null;
   const mine = item.user_id === session?.user.id;
-  const url = photoUrl(item.photo_path);
 
   const report = async () => {
     const { error } = await supabase.from('reports').insert({
@@ -46,7 +46,7 @@ export default function ListingDetail() {
   };
   return (
     <ScrollView contentContainerStyle={s.pad}>
-      {url && <Image source={{ uri: url }} style={{ width: '100%', height: 260, borderRadius: 10 }} />}
+      <PhotoImage path={item.photo_path} style={{ width: '100%', height: 260, borderRadius: 10 }} />
       <Card>
         <Text style={s.h1}>{item.title}</Text>
         <Text style={{ color: '#2E7D32', fontWeight: '700' }}>{formatPrice(item)}</Text>
