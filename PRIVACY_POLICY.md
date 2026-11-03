@@ -3,15 +3,15 @@
 _Last updated: October 23, 2026_
 
 Urban Sprout ("we", "the app") is published by ANKHOSTING. This policy explains what we collect and why.
-Contact: **REPLACE_WITH_SUPPORT_EMAIL**
+Contact: **Ankhosting2025@gmail.com**
 
 ## Information we collect
 - **Account info:** email address and a display name, used to sign you in.
 - **Content you create:** plants, watering schedules, journal entries, photos, and marketplace listings.
 - **AI questions:** the messages you send to "Ask AI" are sent to our server and to our AI provider (currently Fireworks AI) to generate an answer. We store a daily count of questions to apply the free limit. We do not use them for advertising.
 - **Reports and blocks** you make in the marketplace, used for moderation and safety.
-- **Purchases:** subscriptions are processed by Google Play. RevenueCat receives purchase receipts and an anonymous user ID to confirm your Sprout Pro status. We never see your payment card.
-- **Advertising:** free users see ads from Google AdMob, which may collect device identifiers (such as the Advertising ID) and approximate location to serve and measure ads. We request non-personalized ads.
+- **Purchases:** subscriptions are processed by Google Play. RevenueCat receives purchase receipts and your Supabase user ID (sent when you sign in, via RevenueCat's logIn) to confirm your Sprout Pro status. We never see your payment card.
+- **Advertising:** free users see ads from Google AdMob. Where required (for example in the European Economic Area and the United Kingdom), a Google consent form (Google's User Messaging Platform) is shown before ads are requested, and ads are not requested until consent is handled. We request non-personalized ads, but AdMob may collect device identifiers (such as the Advertising ID), IP address and ad-interaction data to serve ads, measure performance and prevent fraud, and may also collect diagnostic data (such as crash logs and performance data) to keep its SDK working.
 
 Watering reminders are scheduled locally on your device.
 
