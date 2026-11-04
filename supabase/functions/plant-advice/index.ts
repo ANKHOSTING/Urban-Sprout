@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       refund = async () => {
         if (refunded) return;
         refunded = true;
-        await admin.rpc("refund_ai_usage", { p_user: user.id }).then(() => {}, () => {});
+        await admin.rpc("refund_ai_usage", { p_user: user.id }).then(({ error }) => { if (error) console.error("refund_ai_usage failed", error.message); }, (e) => console.error("refund_ai_usage threw", (e as Error)?.message));
       };
       if (used > limit) { await refund(); return json({ error: "limit_reached", limit, used: limit }, 429); }
     }
