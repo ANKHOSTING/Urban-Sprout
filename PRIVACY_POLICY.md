@@ -1,6 +1,6 @@
 # Urban Sprout Privacy Policy
 
-_Last updated: October 23, 2026_
+_Last updated: November 10, 2026_
 
 Urban Sprout ("we", "the app") is published by ANKHOSTING. This policy explains what we collect and why.
 Contact: **REPLACE_WITH_SUPPORT_EMAIL**
@@ -9,6 +9,7 @@ Contact: **REPLACE_WITH_SUPPORT_EMAIL**
 - **Account info:** email address and a display name, used to sign you in.
 - **Content you create:** plants, watering schedules, journal entries, photos, and marketplace listings.
 - **AI questions:** the messages you send to "Ask AI" are sent to our server and to our AI provider (currently Fireworks AI) to generate an answer. We store a daily count of questions to apply the free limit. We do not use them for advertising.
+- **Plant identification photos:** if you use "Take photo" or "From gallery" on the Add Plant screen, the photo is resized on your device and sent through our server to our AI provider (currently Fireworks AI) only to identify the plant and suggest care details. We do not store these photos. Each identification counts toward the same free daily AI limit as Ask AI.
 - **Reports and blocks** you make in the marketplace, used for moderation and safety.
 - **Purchases:** subscriptions are processed by Google Play. RevenueCat receives purchase receipts and an anonymous user ID to confirm your Sprout Pro status. We never see your payment card.
 - **Advertising:** free users see ads from Google AdMob, which may collect device identifiers (such as the Advertising ID) and approximate location to serve and measure ads. We request non-personalized ads.
@@ -19,7 +20,7 @@ Watering reminders are scheduled locally on your device.
 To provide the app's features, keep the community safe, apply AI usage limits, process subscriptions, and show ads to free users. We do not sell your personal data.
 
 ## Sharing
-With service providers only: Supabase (database, storage and authentication hosting), Fireworks AI (AI answers), RevenueCat and Google Play (subscriptions), and Google AdMob (ads). Marketplace listings you post are visible to other users.
+With service providers only: Supabase (database, storage and authentication hosting), Fireworks AI (AI answers and plant identification from photos), RevenueCat and Google Play (subscriptions), and Google AdMob (ads). Marketplace listings you post are visible to other users.
 
 ## Security
 Data is transmitted over HTTPS and protected by access rules so only you can read your private plants and journal.
