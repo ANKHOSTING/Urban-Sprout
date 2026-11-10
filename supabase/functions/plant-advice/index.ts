@@ -14,9 +14,29 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+const MAX_BODY_BYTES = 2_000_000;
+/** Reads the body as JSON, counting bytes as they stream in. Returns "too_large" past maxBytes, null on bad JSON. */
+async function readJsonCapped(req: Request, maxBytes: number): Promise<unknown | "too_large" | null> {
+  const reader = req.body?.getReader();
+  if (!reader) return null;
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) { await reader.cancel().catch(() => {}); return "too_large"; }
+    chunks.push(value);
+  }
+  const buf = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+  try { return JSON.parse(new TextDecoder().decode(buf)); } catch { return null; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (Number(req.headers.get("content-length") ?? "0") > 2_000_000) return json({ error: "Request too large" }, 413);
+  if (Number(req.headers.get("content-length") ?? "0") > MAX_BODY_BYTES) return json({ error: "Request too large" }, 413);
   // Set once a free-tier unit is reserved; also called from the outer catch so any later throw/timeout is refunded.
   let refund: () => Promise<void> = async () => {};
   try {
@@ -27,8 +47,10 @@ Deno.serve(async (req) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "Not signed in" }, 401);
 
-    let body: { messages?: unknown };
-    try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+    const parsed = await readJsonCapped(req, MAX_BODY_BYTES);
+    if (parsed === "too_large") return json({ error: "Request too large" }, 413);
+    if (!parsed || typeof parsed !== "object") return json({ error: "Invalid JSON" }, 400);
+    const body = parsed as { messages?: unknown };
     const raw = body?.messages;
     if (!Array.isArray(raw) || raw.length === 0) return json({ error: "No messages" }, 400);
     // Only user/assistant turns are accepted from clients; anything else (system, tool, ...) is rejected

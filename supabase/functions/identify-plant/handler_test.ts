@@ -1,5 +1,5 @@
 // Run: deno test supabase/functions/identify-plant/handler_test.ts  (no dependencies, no network)
-import { createHandler, MAX_BODY_BYTES, parsePlant } from "./handler.ts";
+import { createHandler, MAX_BODY_BYTES, parsePlant, readJsonCapped } from "./handler.ts";
 
 function eq(a: unknown, b: unknown) {
   if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
@@ -82,4 +82,32 @@ Deno.test("200 success consumes without refund", async () => {
   eq(r.status, 200);
   eq((await r.json()).plant.species, "Ocimum basilicum");
   eq(calls, ["try_consume_ai_usage"]);
+});
+
+// A streamed body has no content-length header, so only the byte counter can stop it.
+function streamed(totalBytes: number) {
+  const chunk = new TextEncoder().encode("A".repeat(64 * 1024));
+  let sent = 0;
+  const body = new ReadableStream<Uint8Array>({
+    pull(c) {
+      if (sent === 0) { c.enqueue(new TextEncoder().encode('{"image":"/9j/')); sent += 14; return; }
+      if (sent >= totalBytes) { c.enqueue(new TextEncoder().encode('"}')); c.close(); return; }
+      c.enqueue(chunk); sent += chunk.byteLength;
+    },
+  });
+  return new Request("http://x/identify-plant", { method: "POST", body });
+}
+
+Deno.test("413 on oversized streamed body without content-length", async () => {
+  const req = streamed(MAX_BODY_BYTES + 100_000);
+  eq(req.headers.get("content-length"), null);
+  const { handler, calls } = setup();
+  eq((await handler(req)).status, 413);
+  eq(calls, []); // nothing consumed
+});
+
+Deno.test("readJsonCapped: under cap parses, over cap rejects, bad JSON is null", async () => {
+  eq(((await readJsonCapped(streamed(100_000), MAX_BODY_BYTES)) as { image: string }).image.startsWith("/9j/"), true);
+  eq(await readJsonCapped(streamed(MAX_BODY_BYTES + 1), MAX_BODY_BYTES), "too_large");
+  eq(await readJsonCapped(new Request("http://x", { method: "POST", body: "{bad" }), 100), null);
 });

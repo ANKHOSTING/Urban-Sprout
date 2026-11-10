@@ -20,6 +20,25 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+/** Reads the body as JSON, counting bytes as they stream in. Returns "too_large" past maxBytes, null on bad JSON. */
+export async function readJsonCapped(req: Request, maxBytes: number): Promise<unknown | "too_large" | null> {
+  const reader = req.body?.getReader();
+  if (!reader) return null;
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) { await reader.cancel().catch(() => {}); return "too_large"; }
+    chunks.push(value);
+  }
+  const buf = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+  try { return JSON.parse(new TextDecoder().decode(buf)); } catch { return null; }
+}
+
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 
 /** Pull the first {...} object out of the model reply and coerce it to the fields the form uses. */
@@ -65,8 +84,10 @@ export function createHandler({ createClient, env, fetch }: Deps) {
       const { data: { user } } = await userClient.auth.getUser();
       if (!user) return json({ error: "Not signed in" }, 401);
 
-      let body: { image?: unknown };
-      try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const parsed = await readJsonCapped(req, MAX_BODY_BYTES);
+      if (parsed === "too_large") return json({ error: "Image too large" }, 413);
+      if (!parsed || typeof parsed !== "object") return json({ error: "Invalid JSON" }, 400);
+      const body = parsed as { image?: unknown };
       const image = typeof body?.image === "string" ? body.image.replace(/\s/g, "") : "";
       if (image.length < 100) return json({ error: "No image" }, 400);
       if (image.length > MAX_IMAGE_B64) return json({ error: "Image too large" }, 413);
