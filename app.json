@@ -23,6 +23,10 @@
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
         "com.android.vending.BILLING"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -52,7 +56,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Urban Sprout uses your photos to add pictures to your garden journal and listings.",
-          "cameraPermission": "Urban Sprout uses the camera to photograph your plants so AI can identify them."
+          "cameraPermission": "Urban Sprout uses the camera to photograph your plants so AI can identify them.",
+          "microphonePermission": false
         }
       ],
       [

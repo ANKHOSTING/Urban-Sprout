@@ -44,7 +44,7 @@ export default function MyPlants() {
         }}
       />
       <Link href="/plant/new" asChild>
-        <Pressable style={s.fab} accessibilityLabel="Add plant"><Text style={{ color: '#fff', fontSize: 28 }}>+</Text></Pressable>
+        <Pressable style={[s.fab, { bottom: 32 }]} accessibilityLabel="Add plant"><Text style={{ color: '#fff', fontSize: 28 }}>+</Text></Pressable>
       </Link>
       </View>
       <AdBanner />

@@ -13,7 +13,7 @@ export default function NewPlant() {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [location, setLocation] = useState('');
-  const [every, setEvery] = useState('7');
+  const [every, setEvery] = useState(''); // empty = care guide or 7 days on save
   const [sunlight, setSunlight] = useState('');
   const [notes, setNotes] = useState('');
   const [identifying, setIdentifying] = useState(false);
@@ -28,12 +28,14 @@ export default function NewPlant() {
       if (!r.ok) return Alert.alert('Could not identify plant', r.message);
       const p = r.plant;
       if (!p.name && !p.species) return Alert.alert('No plant found', 'Try a clearer, closer photo of the leaves.');
-      if (p.name) setName(p.name);
-      if (p.species) setSpecies(p.species);
-      if (p.location) setLocation(p.location);
-      if (p.sunlight) setSunlight(p.sunlight);
-      if (p.water_every_days) setEvery(String(p.water_every_days));
-      if (p.tips) setNotes(p.tips);
+      // Only fill fields the user hasn't typed in yet.
+      const fill = (v: string) => (cur: string) => (cur.trim() ? cur : v);
+      setName(fill(p.name));
+      setSpecies(fill(p.species));
+      setLocation(fill(p.location));
+      setSunlight(fill(p.sunlight));
+      setEvery(fill(p.water_every_days ? String(p.water_every_days) : ''));
+      setNotes(fill(p.tips));
       if (p.confidence === 'low') Alert.alert('Not sure about this one', 'The AI is not confident. Please check the details before saving.');
     } catch (e: any) {
       Alert.alert('Photo problem', e?.message ?? String(e));
@@ -70,7 +72,7 @@ export default function NewPlant() {
       )}
       <Input placeholder="Location (e.g. south window)" value={location} onChangeText={setLocation} />
       <Input placeholder="Sunlight" value={sunlight} onChangeText={setSunlight} />
-      <Input placeholder="Water every N days" keyboardType="number-pad" value={every} onChangeText={setEvery} />
+      <Input placeholder="Water every N days (default 7)" keyboardType="number-pad" value={every} onChangeText={setEvery} />
       <Input placeholder="Care notes" value={notes} onChangeText={setNotes} multiline />
       <Button title="Save plant & set reminder" onPress={save} disabled={identifying} />
     </ScrollView>
