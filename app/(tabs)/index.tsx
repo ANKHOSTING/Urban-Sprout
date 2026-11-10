@@ -19,8 +19,10 @@ export default function MyPlants() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
   return (
     <View style={s.screen}>
+      {/* List + FAB share a wrapper so the + always sits above the ad banner, whatever its height. */}
+      <View style={{ flex: 1 }}>
       <FlatList
-        contentContainerStyle={s.pad}
+        contentContainerStyle={[s.pad, { paddingBottom: 96 }]}
         data={plants}
         keyExtractor={(p) => p.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
@@ -41,10 +43,11 @@ export default function MyPlants() {
           );
         }}
       />
-      <AdBanner />
       <Link href="/plant/new" asChild>
-        <Pressable style={[s.fab, { bottom: 80 }]} accessibilityLabel="Add plant"><Text style={{ color: '#fff', fontSize: 28 }}>+</Text></Pressable>
+        <Pressable style={s.fab} accessibilityLabel="Add plant"><Text style={{ color: '#fff', fontSize: 28 }}>+</Text></Pressable>
       </Link>
+      </View>
+      <AdBanner />
     </View>
   );
 }

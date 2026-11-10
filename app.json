@@ -3,7 +3,7 @@
     "name": "Urban Sprout",
     "slug": "urban-sprout",
     "scheme": "urbansprout",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,13 +13,14 @@
     },
     "android": {
       "package": "com.ankhosting.urbansprout",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/monochrome-icon.png",
         "backgroundColor": "#2E7D32"
       },
       "permissions": [
+        "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
         "com.android.vending.BILLING"
       ]
@@ -51,7 +52,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Urban Sprout uses your photos to add pictures to your garden journal and listings.",
-          "cameraPermission": "Urban Sprout uses the camera to photograph your plants."
+          "cameraPermission": "Urban Sprout uses the camera to photograph your plants so AI can identify them."
         }
       ],
       [
